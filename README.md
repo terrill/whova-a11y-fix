@@ -60,6 +60,7 @@ Please feel free to express your disappointment with Whova via any of the follow
 [Accessing Higher Ground]: https://accessinghigherground.org
 [tft@uw.edu]: mailto:tft@uw.edu
 [@terrillthompson]: https://twitter.com/terrillthompson
+[Github Issues]: https://github.com/terrill/whova-a11y-fix/issues
 [Greasemonkey for Firefox]: https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/
 [raw source code]: https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 [support@whova.com]: mailto:support@whova.com

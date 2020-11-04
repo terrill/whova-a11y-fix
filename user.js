@@ -3,8 +3,8 @@
 // @namespace    https://github.com/terrill/whova-a11y-fix
 // @version      1.0
 // @homepage     https://terrillthompson.com
-// @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/whova.js
-// @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/whova.js
+// @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
+// @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
 // @author       Terrill Thompson <tft@uw.edu>
 // @match        https://whova.com/portal/webapp/*

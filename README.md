@@ -15,11 +15,11 @@ Issues Addressed by this Script
 * Improves accessibility of chat interfaces using ARIA live regions
 * As a user filters results by typing into a search field or selecting other filters, a message is written to an ARIA live region indicating the new results count.  
 
-How to Use This Script
-----------------------
+How to Install and Use This Script
+----------------------------------
 
 1. Install a userscript manager browser extension, such as [Greasemonkey for Firefox][], [Tampermonkey for Firefox][], or [Tampermonkey for Chrome][].
-2. Follow this link to the [Whova Accessibility Fix script][]. This should open in your userscript manager, and you will be prompted to install it. Look for an "Install" button.  
+2. Follow this link to the [Whova Accessibility Fix script][]. This should open in your userscript manager, and you will be prompted to install it. Look for an "Install" button, which may have focus by default.   
 3. After you have installed the script, it runs in the background. When you login to the [AHG 2020 Virtual Conference][] the script will automatically run behind the scenes, resulting in a more accessible Whova experience. 
 4. You can control the script (e.g., disable it, enable it, or check for updates) via your userscript manager, which should be available on your browser's toolbar. 
 

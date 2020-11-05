@@ -18,22 +18,12 @@ Issues Addressed by this Script
 How to Use This Script
 ----------------------
 
-1. Install a userscript manager browser extension, such as [Tampermonkey for Chrome][] or [Tampermonkey for Firefox][]. 
-2. Go to the [raw source code] of the Whova Accessibility Fix script.
-3. Select All, then copy. 
-4. In your browser, click the Tampermonkey icon in your browser's toolbar, then select "Create a new script" from the popup menu. 
-5. This will place you in a code editor, which is pre-populated with a userscript template. 
-6. Select All to remove the template code, then press Delete. 
-7. Paste the code that you copied in Step 2. 
-8. Save the script (by selecting File > Save from the menu, or Cmd + S in Mac OS browsers, or Ctrl + S in Windows browsers). 
-9. After you have saved the script, it's now installed and running in the background. When you login to the [Whova web app][] the script will automatically run behind the scenes, resulting in a more accessible Whova experience. 
+1. Install a userscript manager browser extension, such as [Greasemonkey for Firefox][], [Tampermonkey for Firefox][], or [Tampermonkey for Chrome][].
+2. Follow this link to the [Whova Accessibility Fix script][]. This should open in your userscript manager, and you will be prompted to install it. Look for an "Install" button.  
+3. After you have installed the script, it runs in the background. When you login to the [AHG 2020 Virtual Conference][] the script will automatically run behind the scenes, resulting in a more accessible Whova experience. 
+4. You can control the script (e.g., disable it, enable it, or check for updates) via your userscript manager, which should be available on your browser's toolbar. 
 
 AHG Conference Attendees: If you need help installing the script, please contact me (Terrill, [tft@uw.edu][]) and I'll be happy to assist. 
-
-Keeping Up with Updates
------------------------- 
-
-After installing the script, I recommend checking at least once daily for updates as we will be continually working to improve it throughout the conference. To do this, click the Tampermonkey icon in your browser's toolbar, then select "Check for userscript updates". 
 
 Reporting Bugs or Feature Requests
 ----------------------------------
@@ -60,15 +50,17 @@ Please feel free to express your disappointment with Whova via any of the follow
 
 
 [Accessing Higher Ground]: https://accessinghigherground.org
-[tft@uw.edu]: mailto:tft@uw.edu
-[@terrillthompson]: https://twitter.com/terrillthompson
+[AHG 2020 Virtual Conference]: https://whova.com/portal/webapp/ahead_202011
 [Github Issues]: https://github.com/terrill/whova-a11y-fix/issues
 [Greasemonkey for Firefox]: https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/
-[raw source code]: https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 [support@whova.com]: mailto:support@whova.com
 [Tampermonkey for Chrome]: https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en
 [Tampermonkey for Firefox]: https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/
+[tft@uw.edu]: mailto:tft@uw.edu
+[@terrillthompson]: https://twitter.com/terrillthompson
 [tim@whova.io]: mailto:tim@whova.io
+[Whova Accessibility Fix script]: https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/WhovaA11yFix.user.js
 [@WhovaSupport]: https://twitter.com/whovasupport
-[Whova web app]: https://whova.com/portal/webapp
+
+
 

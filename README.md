@@ -25,8 +25,10 @@ How to Use This Script
 5. This will place you in a code editor, which is pre-populated with a userscript template. 
 6. Select All to remove the template code, then press Delete. 
 7. Paste the code that you copied in Step 2. 
-8. Save the script (by selecting File > Save from the menu, or Cmd + S in Mac OS browsers, or Alt + S in Windows browsers). 
+8. Save the script (by selecting File > Save from the menu, or Cmd + S in Mac OS browsers, or Ctrl + S in Windows browsers). 
 9. After you have saved the script, it's now installed and running in the background. When you login to the [Whova web app][] the script will automatically run behind the scenes, resulting in a more accessible Whova experience. 
+
+AHG Conference Attendees: If you need help installing the script, please contact me (Terrill, [tft@uw.edu][]) and I'll be happy to assist. 
 
 Keeping Up with Updates
 ------------------------ 

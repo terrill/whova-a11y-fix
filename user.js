@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.0
+// @version      1.1
 // @homepage     https://terrillthompson.com
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
@@ -12,8 +12,6 @@
 
 (function() {
 
-    var i, thisPage, prevPage, mutationObserver, observerOptions;
-
     // NOTE: Fixes are not preserved as the user navigates from page to page in Whova
     // Therefore, fixes need to be implemented EVERY TIME a new page loads
 
@@ -23,48 +21,59 @@
     //   a) Check the URL (a change in URL = a new page)
     //   b) Check for specific mutations (e.g., an open dialog)
 
-    // Wait until page has loaded before doing anything
-    window.addEventListener('load',function() {
-
-        // Fix the current page
-        thisPage = getPage();
-        fixPage(thisPage);
-        prevPage = thisPage;
-
-        // Use a MutationObserver to watch for changes to the page
-        mutationObserver = new MutationObserver(function(mutations) {
-          // mutations were observed
-          thisPage = getPage();
-
-          if (thisPage !== prevPage) {
-            // the URL has changed. This is a new page.
-            fixPage(thisPage);
-            prevPage = thisPage;
-          }
-          else {
-            // Check all same-page mutations
-            // i.e., this is not a new page, but something has changed
-            for (i=0; i< mutations.length; i++) {
-              // Uncomment the following line to see all mutations
-              // console.log('Mutation ' + i + ': ',mutations[i].target);
-
-              if (mutations[i].target.className == 'modal-open') {
-                // A modal dialog has popped up
-                fixModalDialog();
-              }
-            }
-          }
-        });
-        observerOptions = {
-            childList: true,
-            attributes: false,
-            characterData: false,
-            subtree: true
-        };
-        mutationObserver.observe(document, observerOptions);
-    });
-
+    // document load may already be complete before this userscript is executed
+    if (document.readyState == 'complete') {
+      init();
+    }
+    else {
+      // Wait until page has loaded
+      window.addEventListener('load',function() {
+        init();
+      });
+    }
 })();
+
+function init() {
+
+  var i, thisPage, prevPage, mutationObserver, observerOptions;
+
+  // Fix the current page
+  thisPage = getPage();
+  fixPage(thisPage);
+  prevPage = thisPage;
+
+  // Use a MutationObserver to watch for changes to the page
+  mutationObserver = new MutationObserver(function(mutations) {
+    // mutations were observed
+    thisPage = getPage();
+
+    if (thisPage !== prevPage) {
+      // the URL has changed. This is a new page.
+      fixPage(thisPage);
+      prevPage = thisPage;
+    }
+    else {
+      // Check all same-page mutations
+      // i.e., this is not a new page, but something has changed
+      for (i=0; i< mutations.length; i++) {
+        // Uncomment the following line to see all mutations
+        // console.log('Mutation ' + i + ': ',mutations[i].target);
+
+        if (mutations[i].target.className == 'modal-open') {
+          // A modal dialog has popped up
+          fixModalDialog();
+        }
+      }
+    }
+  });
+  observerOptions = {
+    childList: true,
+    attributes: false,
+    characterData: false,
+    subtree: true
+  };
+  mutationObserver.observe(document, observerOptions);
+}
 
 function getPage() {
 
@@ -594,7 +603,7 @@ function fixOther(thisPage) {
 function makeButton(el,thisPage) {
 
   // make an accessible interactive button out of element el
-  if (typeof el !== 'undefined') {
+  if (el && typeof el !== 'undefined') {
     el.setAttribute('role','button');
     el.setAttribute('tabindex','0');
     el.addEventListener('keydown', function(event) {

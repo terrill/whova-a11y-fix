@@ -28,7 +28,7 @@ AHG Conference Attendees: If you need help installing the script, please contact
 Reporting Bugs or Feature Requests
 ----------------------------------
 
-To report bugs or submit feature requests, please use go to the [Github Issues] page, and select the "New Issue" link. This is a volunteer effort, so we can't guarantee that we'll be able to address all issues, but we'll do our best. 
+To report bugs or submit feature requests, please go to the [Github Issues] page, and select the "New Issue" link. This is a volunteer effort, so we can't guarantee that we'll be able to address all issues, but we'll do our best. 
 
 Contributing
 -------------------

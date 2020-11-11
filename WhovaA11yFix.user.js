@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.3
+// @version      1.4
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -216,7 +216,13 @@ function getPage() {
     if (pathParts[1] === 'portal' && pathParts[2] === 'webapp') {
       // this path conforms to the expected pattern
       if (pathParts[4] !== '') {
-        thisPage = pathParts[4];
+        if (pathParts[4] === 'exhibitors') {
+          // standardize on upper case first letter
+          thisPage = 'Exhibitors';
+        }
+        else {
+          thisPage = pathParts[4];
+        }
       }
     }
     return thisPage;
@@ -740,11 +746,6 @@ function fixOther(thisPage,scope) {
 
   var i, chat;
 
-  // TODO: If page contains a #message_form, make that more accessible:
-  // Add role="form" so it appears as an ARIA landmark
-  // Add aria-label="Message Form"
-  // Add role="input" and aria-label="Enter message here" to the message field
-
   if (thisPage == 'Agenda') {
 
     // The navigation buttons at the top of the agenda are just divs
@@ -783,8 +784,8 @@ function fixOther(thisPage,scope) {
 
   else if (thisPage == 'Exhibitors') {
 
-    // TODO: The list of Exhibitors is comprised of entirely of divs.
-    // Make them buttons
+    // TODO: The list of Exhibitors is comprised of entirely of unfocusable divs.
+    // The entire div is clickable, and loads that exhibitor's content in the adjacent panel
 
     // TODO: Make the chat an ARIA live region
     //  Add aria-live="polite" and aria-atomic="false" to the chat region
@@ -906,18 +907,6 @@ function showSearchCount(thisPage) {
       else if (thisPage == 'Speakers') {
         results = document.getElementsByClassName('speaker-content');
         msg = 'Showing ' + results.length + ' speakers';
-      }
-      else if (thisPage == 'Videos') {
-        results = document.getElementsByClassName('video-info');
-        msg = 'Showing ' + results.length + ' videos';
-      }
-      else if (thisPage == 'Videos') {
-        results = document.getElementsByClassName('video-info');
-        msg = 'Showing ' + results.length + ' videos';
-      }
-      else if (thisPage == 'Videos') {
-        results = document.getElementsByClassName('video-info');
-        msg = 'Showing ' + results.length + ' videos';
       }
       alertDiv.textContent = msg;
       alertDiv.style.display = 'block';

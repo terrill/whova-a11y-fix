@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.2
+// @version      1.3
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -82,7 +82,7 @@ function init() {
         }
         else if (mutations[i].target.classList.contains('modal-open')) {
           // A modal dialog has popped up
-          fixModalDialog();
+          fixModalDialog(thisPage);
         }
         else if (thisPage === 'Agenda') {
           if (mutations[i].target.classList.contains('sessions') || mutations[i].target.classList.contains('no-sessions')) {
@@ -680,15 +680,59 @@ function fixHeadings(thisPage,scope) {
 
 function fixModalDialog(thisPage) {
 
-  // TODO: Make modal dialogs more accessible.
-  // This function is called each time a dialog appears,
-  // detected via the mutation observer
-  // If page includes a pop-up dialog, make that more accessible
-  // Example: On Attendees page, there's a "View Profile" dialog
-  // Add id to dialog title
-  // Add aria-labelled to outer dialog element
-  // Add support for Escape key to close the dialog
-  // Trap keyboard focus
+  // Whova has lots of different dialogs,
+  // some more accessible than others
+
+  var dialog, dialogId, title, titleId, closeButton;
+
+
+  if (thisPage == 'Attendees' || thisPage == 'Speakers') {
+
+    // Both pages use the same dialog, which already has some accessibility
+    // The outer container has role="dialog"
+    // An inner container has role="document"
+    // The dialog is a child of body
+    // & all other page content has aria-hidden="true" when the dialog is open
+
+    // The dialog has a visible heading
+    // Add an id to that heading, then reference it with aria-labelledby on the outer container
+    dialog = document.getElementsByClassName('modal');
+    if (dialog.length > 0) {
+      // the dialog has a unique id - resuse that for the heading id
+      dialogId = dialog[0].getAttribute('id');
+      title = document.getElementsByClassName('modal-title');
+      if (title.length) {
+        titleId = dialogId + '-title';
+        title[0].setAttribute('id',titleId);
+        // Title is also an h4 heading; should be h1 since modal is now the entire document
+        title[0].setAttribute('role','heading');
+        title[0].setAttribute('aria-level','1');
+        dialog[0].setAttribute('aria-labelledby',titleId);
+      }
+      // Place focus on the first focusable element (the close button)
+      closeButton = document.getElementsByClassName('close');
+      if (closeButton.length === 1) {
+        closeButton[0].focus();
+      }
+    }
+  }
+  else if (thisPage == 'VideoGallery') {
+    // TODO: Fix the dialog that pops up when users click a video
+    // It has some accessibility (similar to Attendees), but is different
+  }
+  else if (thisPage === 'CommunityBoard') {
+    // TODO: Fix the dialog that pops up with "Add a topic or social group"
+  }
+  else if (thisPage === 'Agenda') {
+    // TODO: Fix the dialog that pops up when user clicks the "Add to my agenda" button
+  }
+
+  // TODO: Add support for Escape key to close dialogs
+
+  // TODO: Fix keyboard focus. User can tab between dialog buttons,
+  // but focus can leave the dialog.
+  // Also, elements within the dialog that should be included in the tab order (e.g., links)
+  // are not focusable.
 
 }
 

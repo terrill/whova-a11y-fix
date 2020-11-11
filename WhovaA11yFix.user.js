@@ -1,8 +1,7 @@
 // ==UserScript==
-// @name         Whova Accessibility Fix
+// @name         TEST Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.1
-// @homepage     https://terrillthompson.com
+// @version      1.2
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -10,59 +9,188 @@
 // @match        https://whova.com/portal/webapp/*
 // ==/UserScript==
 
+// Global vars
+var a11ySearching = false; // will change to true temporarily when a user types in a search field
+var a11yDebug = true; // set to true to write messages to the console; otherwise false
+var a11yFixingPage = false; // stop gap to prevent script from handling mutations that result from a11y fixes
+
 (function() {
 
-    // NOTE: Fixes are not preserved as the user navigates from page to page in Whova
-    // Therefore, fixes need to be implemented EVERY TIME a new page loads
-
-    // Whova changes pages/views without a new page load
-    // To determine when the page/view has changed significantly, we need to:
-    // 1. Set a mutationObserver to watch for changes. If they occur:
-    //   a) Check the URL (a change in URL = a new page)
-    //   b) Check for specific mutations (e.g., an open dialog)
-
-    // document load may already be complete before this userscript is executed
-    if (document.readyState == 'complete') {
+  // document load may already be complete before this userscript is executed
+  if (document.readyState == 'complete') {
+    // this might be a lie. Better give page a moment to fully load.
+    setTimeout(function() {
       init();
-    }
-    else {
-      // Wait until page has loaded
-      window.addEventListener('load',function() {
+    }, 2000);
+  }
+  else {
+    // Wait until page has loaded
+    window.addEventListener('load',function() {
+      // Content continues to be added after load is fired
+      // Better wait a moment.
+      setTimeout(function() {
         init();
-      });
-    }
+      }, 2000);
+    });
+  }
 })();
 
 function init() {
 
-  var i, thisPage, prevPage, mutationObserver, observerOptions;
+  // Whova changes pages/views without a new page load
+  // To determine when the page/view has changed significantly, we need to:
+  // Set a mutationObserver to watch for changes. If they occur:
+  //   1. Check the URL (a change in URL = a new page)
+  //   2. Check for specific mutations using nodeName and classList
+
+  var i, thisPage, prevPage, searching, mutationObserver, observerOptions;
 
   // Fix the current page
   thisPage = getPage();
-  fixPage(thisPage);
+  fixPage(thisPage,'all');
   prevPage = thisPage;
 
-  // Use a MutationObserver to watch for changes to the page
+  // Use a MutationObserver to watch for changes
   mutationObserver = new MutationObserver(function(mutations) {
-    // mutations were observed
-    thisPage = getPage();
 
+    if (a11yFixingPage) {
+      return;
+    }
+    if (a11yDebug) {
+      console.log('New mutations observed: ' + mutations.length);
+    }
+    thisPage = getPage();
     if (thisPage !== prevPage) {
       // the URL has changed. This is a new page.
-      fixPage(thisPage);
+      fixPage(thisPage,'all');
       prevPage = thisPage;
     }
     else {
       // Check all same-page mutations
       // i.e., this is not a new page, but something has changed
       for (i=0; i< mutations.length; i++) {
-        // Uncomment the following line to see all mutations
-        // console.log('Mutation ' + i + ': ',mutations[i].target);
 
-        if (mutations[i].target.className == 'modal-open') {
+        if (a11yDebug) {
+          // This generates a LOT of content!
+          // Uncomment if needed to inspect mutations
+          // console.log('Mutation ' + i + ': ',mutations[i].target);
+        }
+
+        if (mutations[i].target.classList.contains('page-content') || mutations[i].target.classList.contains('home-content')) {
+          // this is a significant change to the main content area
+          fixPage(thisPage,'main');
+        }
+        else if (mutations[i].target.classList.contains('modal-open')) {
           // A modal dialog has popped up
           fixModalDialog();
         }
+        else if (thisPage === 'Agenda') {
+          if (mutations[i].target.classList.contains('sessions') || mutations[i].target.classList.contains('no-sessions')) {
+            // The list of sessions has been updated
+            fixPage(thisPage,'main');
+            showSearchCount(thisPage);
+          }
+          else if (mutations[i].target.classList.contains('page-content-inner')) {
+            // the entire agenda page has changed (not the result of a search or filter)
+            fixPage(thisPage,'main');
+          }
+        }
+        else if (thisPage === 'Attendees') {
+          if (mutations[i].target.classList.contains('page-content-padding')) {
+            fixPage(thisPage,'main');
+            if (a11ySearching) {
+              showSearchCount(thisPage);
+              a11ySearching = false;
+            }
+          }
+        }
+        else if (thisPage === 'CommunityBoard') {
+          if (mutations[i].target.classList.contains('simplebar-content')) {
+            // the list of topics has changed
+            fixPage(thisPage,'main');
+            if (a11ySearching) {
+              showSearchCount(thisPage);
+              a11ySearching = false;
+            }
+          }
+          else if (mutations[i].target.classList.contains('messages-text')) {
+            // user has clicked on a new topic
+            fixPage(thisPage,'main');
+            // TODO: Consider moving focus to top of the content column?
+          }
+        }
+        else if (thisPage === 'Sponsors') {
+          if (mutations[i].target.classList.contains('sponsor-details')) {
+            // this mutation occurs both when the page first loads
+            // and when the user clicks on a sponsor
+            fixPage(thisPage,'main');
+          }
+        }
+        else if (thisPage === 'Exhibitors') {
+          if (mutations[i].target.classList.contains('exhibitor-details')) {
+            // this mutation occurs both when the page first loads
+            // and when the user clicks on an exhibitor
+            fixPage(thisPage,'main');
+          }
+        }
+        else if (thisPage === 'Messages') {
+          if (mutations[i].target.classList.contains('thread-messages')) {
+            // this mutation occurs both when the page first loads
+            // and when the user clicks on a message
+            fixPage(thisPage,'main');
+          }
+        }
+        else if (thisPage === 'SessionQA') {
+          if (mutations[i].target.classList.contains('program-list')) {
+            // this mutation occurs when the page first loads
+            // If the user clicks on a session (or clicks back)
+            // the new page is captured with the 'page-content' mutation
+            fixPage(thisPage,'main');
+          }
+        }
+        else if (thisPage === 'VideoGallery') {
+          if (mutations[i].target.classList.contains('video-list')) {
+            fixPage(thisPage,'main');
+            if (a11ySearching) {
+              showSearchCount(thisPage);
+              a11ySearching = false;
+            }
+          }
+          else if (mutations[i].target.classList.contains('video-gallery')) {
+            fixPage(thisPage,'main');
+          }
+        }
+        else if (thisPage === 'Documents') {
+          if (mutations[i].target.classList.contains('documents-list')) {
+            fixPage(thisPage,'main');
+            if (a11ySearching) {
+              showSearchCount(thisPage);
+              a11ySearching = false;
+            }
+          }
+          else if (mutations[i].target.classList.contains('page-content-padding')) {
+            fixPage(thisPage,'main');
+          }
+        }
+        else if (thisPage === 'Polls') {
+          if (mutations[i].target.classList.contains('page-content-inner')) {
+            fixPage(thisPage,'main');
+            if (a11ySearching) {
+              showSearchCount(thisPage);
+              a11ySearching = false;
+            }
+          }
+        }
+        else if (thisPage === 'Speakers') {
+          if (mutations[i].target.classList.contains('speakers-page')) {
+            fixPage(thisPage,'main');
+            if (a11ySearching) {
+              showSearchCount(thisPage);
+              a11ySearching = false;
+            }
+          }
+        }
+        break;
       }
     }
   });
@@ -94,22 +222,37 @@ function getPage() {
     return thisPage;
 }
 
-function fixPage(thisPage) {
+function fixPage(thisPage,scope) {
 
-  // wait briefly to give new page content time to fully load
-  var waitTime = 1000;
+  // scope is either:
+  // 'all' - fix everything
+  // 'main' - fix the main content only
+
+  if (a11yDebug) {
+    console.log('fixing accessibility on the ' + thisPage + ' page');
+  }
+  a11yFixingPage = true;
+
+  // Wait a bit for the page to fully load
+  // Sometimes this function is called while child nodes are still populating
   setTimeout(function() {
+    if (scope === 'all') {
+      fixTitle(thisPage);
+      fixLandmarks(thisPage);
+      addStyle();
+      addAlert();
+      addEventListeners(thisPage);
+    }
+    fixImages(thisPage,scope);
+    fixHeadings(thisPage,scope);
+    fixOther(thisPage,scope);
+  }, 2000);
 
-    fixTitle(thisPage);
-    addStyle();
-    fixImages(thisPage);
-    fixLandmarks(thisPage);
-    fixHeadings(thisPage);
-    addAlert();
-    fixOther(thisPage);
-    addEventListeners(thisPage);
-
-  }, waitTime);
+  // Wait a bit (again) while mutations fire as a result of the accessibility fixes
+  // Otherwise, the mutations will call this function again
+  setTimeout(function() {
+    a11yFixingPage = false;
+  }, 2000);
 }
 
 function fixTitle(thisPage) {
@@ -118,6 +261,7 @@ function fixTitle(thisPage) {
   // Prepend thisPage to the conference title so each page title is unique
   var currentTitle, newTitle;
   currentTitle = document.getElementsByTagName('title')[0].textContent;
+
   if (thisPage == 'CommunityBoard') {
     newTitle = 'Community | ' + currentTitle;
   }
@@ -133,11 +277,60 @@ function fixTitle(thisPage) {
   document.getElementsByTagName('title')[0].textContent = newTitle;
 }
 
+function fixLandmarks(thisPage,scope) {
+
+  // All content on the page is wrapped in <main>, which is incorrect usage
+  // Add role="presentation" to override main, so screen readers will ignore it
+  // Use id ('app') to retrieve main; otherwise this function will override our replacement main element
+  // if called a second time on the same page
+
+  var main, headerTop, headerBottom, headerParent, header, nav, newMain;
+
+  main = document.getElementById('app');
+  if (main) {
+    main.setAttribute('role', 'presentation');
+  }
+
+  // Add correct ARIA landmark roles
+
+  // The banner is comprised of two sections, and there is no wrapper that contains them both
+  // To include both, a new parent needs to be inserted that contains both sections
+  headerTop = document.getElementsByClassName('whova-header');
+  if (headerTop.length > 0) {
+    headerBottom = document.getElementsByClassName('event-name-header');
+    headerParent = headerTop[0].parentNode;
+    header = document.createElement('header');
+    header.setAttribute('role', 'banner');
+    header.append(headerTop[0]);
+    if (headerBottom.length > 0) {
+      header.append(headerBottom[0]);
+    }
+    headerParent.prepend(header);
+  }
+
+  nav = document.getElementsByClassName('sidenav');
+  if (nav.length > 0) {
+    nav[0].setAttribute('role', 'navigation');
+    nav[0].setAttribute('aria-label','Main');
+  }
+
+  newMain = document.getElementsByClassName('page-content');
+  if (newMain.length > 0) {
+    newMain[0].setAttribute('role', 'main');
+  }
+}
+
 function addStyle() {
 
-  // inject a style section with custom CSS
+  var navListItems, i, css, styles;
 
-  var css, styles;
+  // First, add a class to all anchors in the nav menu
+  navListItems = document.getElementsByClassName('side-link-main');
+  for (i=0; i < navListItems.length; i++) {
+    navListItems[i].parentNode.classList.add('a11y-nav-link');
+  }
+
+  // Next, inject a style section with custom CSS
 
   css = document.createElement('style');
 
@@ -162,14 +355,22 @@ function addStyle() {
   // Stylize the all-purpose live region that appears at the top of main
   styles += '#a11y-alert { font-size:1.5em;font-weight:bold;background-color:#FFFFCC;border:2px solid #340449;padding:0.75em;margin:0.25em 0.25em 1em;display:none }' + "\n";
 
-  // Add visible focus indicator
-  styles += 'a:focus, button:focus, [role="button"]:focus {' + "\n";
+  // Add visible focus indicator to banner and main (see below for nav)
+  styles += '[role="banner"] a:focus, [role="main"] a:focus, [role="main"] button:focus, [role="button"]:focus {' + "\n";
   styles += '  border: 3px solid #94BFF9 !important;' + "\n";
   styles += '  border-radius: 3px;' + "\n";
   styles += '  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.075) inset, 0 0 3px rgba(102, 175, 233, 0.6);' + "\n";
   styles += '  outline: 0 none' + "\n";
   styles += '} ' + "\n";
 
+  // The above focus indicator causes problems within the nav menu
+  // Override with this alternative
+  styles += 'div.sidenav .side-link-main:hover, div.sidenav a.a11y-nav-link:focus li {' + "\n";
+  styles += '  border: none !important;' + "\n";
+  styles += '  box-shadow: none !important;' + "\n";
+  styles += '  background-color: black !important;' + "\n";
+  styles += '  color: white !important;' + "\n";
+  styles += '} ' + "\n";
 
   // Append styles, allowing for browser differences
   if (css.styleSheet) {
@@ -181,6 +382,7 @@ function addStyle() {
 
   // Append to the head
   document.getElementsByTagName("head")[0].appendChild(css);
+
 }
 
 function addAlert() {
@@ -194,10 +396,10 @@ function addAlert() {
     alertDiv.setAttribute('aria-live','polite');
     alertDiv.setAttribute('aria-atomic','true');
     alertDiv.setAttribute('id','a11y-alert');
-    if (document.getElementsByClassName('page-content')) {
+    if (document.getElementsByClassName('page-content').length) {
       document.getElementsByClassName('page-content')[0].prepend(alertDiv);
     }
-    else {
+    else if (document.getElementById('app')) {
       document.getElementById('app').prepend(alertDiv);
     }
   }
@@ -212,13 +414,17 @@ function fixImages(thisPage) {
   for (i = 0; i < images.length; i++) {
     if (images[i].getAttribute('alt') == null) {
 
-      // Images in Whova are reliably identifiable by their class
-      if (images[i].getAttribute('class') == 'whova-logo') {
+      if (images[i].classList.contains('whova-logo')) {
         images[i].setAttribute('alt','Whova');
       }
-      else if (thisPage == 'Attendees' || thisPage == 'Speakers') {
+      else if (thisPage === 'Home') {
+        if (images[i].classList.contains('event-banner-web')) {
+          images[i].setAttribute('alt','Accessing Higher Ground Accessible Media, Web & Technology Conference. Presented by AHEAD in collaboration with ATHEN');
+        }
+      }
+      else if (thisPage === 'Attendees' || thisPage === 'Speakers') {
         // Add alt to view icons (for switching between Grid View & List View)
-        if (images[i].getAttribute('class') == 'view-icon') {
+        if (images[i].classList.contains('view-icon')) {
           // There are two images with this class; need to consult src attribute
           if (images[i].getAttribute('src') == '/static/app_frontend/webapp/selected-grid.png') {
             images[i].setAttribute('alt','Grid View');
@@ -227,7 +433,7 @@ function fixImages(thisPage) {
             images[i].setAttribute('alt','List View');
           }
         }
-        else if (images[i].getAttribute('class') == 'arrow') {
+        else if (images[i].classList.contains('arrow')) {
           // Add alt to arrow icons in pagination feature at bottom of the page
           // There are two images with this class; need to consult src attribute
           if (images[i].getAttribute('src') == '/static/app_frontend/webapp/previous.png') {
@@ -242,81 +448,34 @@ function fixImages(thisPage) {
           images[i].setAttribute('alt','');
         }
       }
-      else if (thisPage == 'CommunityBoard') {
-        images[i].setAttribute('alt','');
-      }
-      else if (thisPage == 'Exhibitors') {
-        images[i].setAttribute('alt','');
-      }
-      else if (thisPage == 'Messages') {
-        images[i].setAttribute('alt','');
-      }
-      else if (thisPage == 'VideoGallery') {
-        images[i].setAttribute('alt','');
-      }
-      else if (thisPage == 'Documents') {
-        images[i].setAttribute('alt','');
-      }
-      else if (thisPage == 'Polls') {
-        images[i].setAttribute('alt','');
-      }
-      else if (thisPage == 'Surveys') {
+      else {
+        // All other images are believed to be decorative
         images[i].setAttribute('alt','');
       }
     }
   }
 }
 
-function fixLandmarks(thisPage) {
+function fixHeadings(thisPage,scope) {
 
-  // All content on the page is wrapped in <main>, which is incorrect usage
-  // Add role="presentation" to override main, so screen readers will ignore it
-  // Use id ('app') to retrieve main; otherwise this function will override our replacement main element
-  // if called a second time on the same page
+  var eventName, eventH2, main, i, h1, h2, h3, h2s, h3s, h4s, textContent, personLinks, personLinkParent, leftColumn;
 
-  var main, headerTop, headerBottom, headerParent, header, nav, newMain;
-
-  main = document.getElementById('app');
-  if (typeof main !== 'undefined') {
-    main.setAttribute('role', 'presentation');
-  }
-
-  // Add correct ARIA landmark roles
-
-  // The banner is comprised of two sections, and there is no wrapper that contains them both
-  // To include both, a new parent needs to be inserted that contains both sections
-  headerTop = document.getElementsByClassName('whova-header')[0];
-  headerBottom = document.getElementsByClassName('event-name-header')[0];
-  if (typeof headerTop !== 'undefined') {
-    headerParent = headerTop.parentNode;
-    header = document.createElement('header');
-    header.setAttribute('role', 'banner');
-    header.append(headerTop);
-    if (typeof headerBottom !== 'undefined') {
-      header.append(headerBottom);
+  // The event name is an h2, but shouldn't be a heading at all
+  if (scope == 'all') {
+    // should only need to do this once
+    if (document.getElementsByClassName('event-name-info').length > 0) {
+      eventName = document.getElementsByClassName('event-name-info')[0];
+      eventH2 = eventName.querySelectorAll('h2');
+      if (eventH2.length > 0) {
+        eventH2[0].setAttribute('role','presentation');
+      }
     }
-    headerParent.prepend(header);
   }
-
-  nav = document.getElementsByClassName('sidenav')[0];
-  if (typeof nav !== 'undefined') {
-    nav.setAttribute('role', 'navigation');
-  }
-
-  newMain = document.getElementsByClassName('page-content')[0];
-  if (typeof newMain !== 'undefined') {
-    newMain.setAttribute('role', 'main');
-  }
-}
-
-function fixHeadings(thisPage) {
-
-  var main, i, h1, h2, h3, h2s, h3s, h4s, textContent, personLinks, personLinkParent, leftColumn;
 
   // Add a visible H1 heading to main (if it hasn't already been done)
   if (document.getElementsByTagName('h1').length === 0) {
-    main = document.getElementsByClassName('page-content')[0];
-    if (typeof main !== 'undefined') {
+    main = document.getElementsByClassName('page-content');
+    if (main.length > 0) {
       h1 = document.createElement('h1');
       if (thisPage == 'CommunityBoard') {
         h1.textContent = 'Community';
@@ -333,7 +492,7 @@ function fixHeadings(thisPage) {
       else {
         h1.textContent = thisPage;
       }
-      main.prepend(h1);
+      main[0].prepend(h1);
     }
   }
 
@@ -356,7 +515,6 @@ function fixHeadings(thisPage) {
     }
   }
   else if (thisPage == 'Attendees') {
-
     // Convert letters of the alphabet to h2 headings
     h2s = document.getElementsByClassName('last-initial-header');
     for (i=0; i < h2s.length; i++) {
@@ -377,19 +535,21 @@ function fixHeadings(thisPage) {
   else if (thisPage == 'CommunityBoard') {
 
     // Add an h2 heading "List of Topics" at the top of the left column
-    leftColumn = document.getElementsByClassName('left-container')[0];
-    if (typeof leftColumn !== 'undefined') {
+    leftColumn = document.getElementsByClassName('left-container');
+    if (leftColumn.length > 0) {
       h2 = document.createElement('h2');
       h2.textContent = 'List of Topics';
-      leftColumn.prepend(h2);
+      leftColumn[0].prepend(h2);
     }
 
     // Make the existing big bold text at the top of the right column an h2
     // and preface it with "Selected Topic: "
-    h2 = document.getElementsByClassName('topic-title')[0];
-    h2.textContent = 'Selected Topic: ' + h2.textContent;
-    h2.setAttribute('role','heading');
-    h2.setAttribute('aria-level','2');
+    h2 = document.getElementsByClassName('topic-title');
+    if (h2.length > 0) {
+      h2[0].textContent = 'Selected Topic: ' + h2.textContent;
+      h2[0].setAttribute('role','heading');
+      h2[0].setAttribute('aria-level','2');
+    }
 
     // Convert each topic in list to h3 heading
     h3s = document.getElementsByClassName('title');
@@ -402,7 +562,7 @@ function fixHeadings(thisPage) {
 
     // Add an h2 heading "List of Exhibitors" at the top of the left column
     leftColumn = document.getElementById('exhibitors-layout-col-0');
-    if (typeof leftColumn !== 'undefined') {
+    if (leftColumn) {
       h2 = document.createElement('h2');
       h2.textContent = 'List of Exhibitors';
       leftColumn.prepend(h2);
@@ -425,26 +585,27 @@ function fixHeadings(thisPage) {
     // Convert main heading (exhibitor name) to h2 heading
     // and preface it with "Selected Exhibitor: "
     h2 = document.getElementById('exhibitor-details-name');
-    if (typeof h2 !== 'undefined') {
+    if (h2) {
       h2.textContent = 'Selected Exhibitor: ' + h2.textContent;
       h2.setAttribute('role','heading');
       h2.setAttribute('aria-level','2');
     }
 
     // Convert heading "Chat" to h2 heading
-    h2 = document.getElementsByClassName('chat-header')[0];
-    h2.setAttribute('role','heading');
-    h2.setAttribute('aria-level','2');
-
+    h2 = document.getElementsByClassName('chat-header');
+    if (h2.length > 0) {
+      h2[0].setAttribute('role','heading');
+      h2[0].setAttribute('aria-level','2');
+    }
   }
   else if (thisPage == 'Messages') {
 
     // Add an h2 heading "List of Messages" at the top of the left column
-    leftColumn = document.getElementsByClassName('threadlist-root')[0];
-    if (typeof leftColumn !== 'undefined') {
+    leftColumn = document.getElementsByClassName('threadlist-root');
+    if (leftColumn.length > 0) {
       h2 = document.createElement('h2');
       h2.textContent = 'List of Messages';
-      leftColumn.prepend(h2);
+      leftColumn[0].prepend(h2);
     }
 
     // Convert sender names to h3 headings
@@ -457,7 +618,7 @@ function fixHeadings(thisPage) {
     // Convert main heading (sender name) to h2 heading
     // and preface it with "Selected Message: "
     h2 = document.getElementById('thread-recv-name');
-    if (typeof h2 !== 'undefined') {
+    if (h2) {
       h2.textContent = 'Selected Message: ' + h2.textContent;
       h2.setAttribute('role','heading');
       h2.setAttribute('aria-level','2');
@@ -531,7 +692,7 @@ function fixModalDialog(thisPage) {
 
 }
 
-function fixOther(thisPage) {
+function fixOther(thisPage,scope) {
 
   var i, chat;
 
@@ -561,13 +722,13 @@ function fixOther(thisPage) {
     // They provide no advantage for screen reader users or keyboard users
     /*
     var leftArrow = document.getElementById('tab-arrow-left');
-    if (typeof leftArrow !== 'undefined') {
+    if (leftArrow) {
       leftArrow.setAttribute('role','button');
       leftArrow.setAttribute('tabindex','0');
       leftArrow.setAttribute('aria-label','Previous date');
     }
     var rightArrow = document.getElementById('tab-arrow-right');
-    if (typeof rightArrow !== 'undefined') {
+    if (rightArrow) {
       rightArrow.setAttribute('role','button');
       rightArrow.setAttribute('tabindex','0');
       rightArrow.setAttribute('aria-label','Next date');
@@ -578,11 +739,16 @@ function fixOther(thisPage) {
 
   else if (thisPage == 'Exhibitors') {
 
-    // Make the chat an ARIA live region
+    // TODO: The list of Exhibitors is comprised of entirely of divs.
+    // Make them buttons
+
+    // TODO: Make the chat an ARIA live region
     //  Add aria-live="polite" and aria-atomic="false" to the chat region
-    chat = document.getElementsByClassName('chat')[0];
-    chat.setAttribute('aria-live','polite');
-    chat.setAttribute('aria-atomic','false');
+    chat = document.getElementsByClassName('chat');
+    if (chat.length > 0) {
+      chat[0].setAttribute('aria-live','polite');
+      chat[0].setAttribute('aria-atomic','false');
+    }
   }
   else if (thisPage == 'SessionQA') {
 
@@ -603,17 +769,22 @@ function fixOther(thisPage) {
 function makeButton(el,thisPage) {
 
   // make an accessible interactive button out of element el
-  if (el && typeof el !== 'undefined') {
+  if (el) {
     el.setAttribute('role','button');
     el.setAttribute('tabindex','0');
+    if (el.classList.contains('active')) {
+      // this is the selected button within its group
+      // add ARIA to communicate that to screen reader users
+      el.setAttribute('aria-current','page');
+    }
     el.addEventListener('keydown', function(event) {
       if (event.keyCode === 13 || event.keyCode == 32) { // Enter or space
         event.preventDefault();
         // Emulate a mouse click on the element. Whova will do the rest.
         el.click();
         // Agenda will refresh; need to fix the page again
-        fixPage(thisPage);
-        countSearchResults(thisPage);
+        fixPage(thisPage,'main');
+        showSearchCount(thisPage);
       }
     });
   }
@@ -621,41 +792,23 @@ function makeButton(el,thisPage) {
 
 function addEventListeners(thisPage) {
 
-  var i, j, k, pageLinks, searchFields;
-  if (thisPage == 'Agenda') {
-    // See makeButton() for event listeners on agenda buttons
-  }
-  else if (thisPage == 'Attendees') {
-    // Add event listener for clicks and keydowns on pagination links
-    pageLinks = document.querySelectorAll('ul.pagination li a');
-    for (i=0; i < pageLinks.length; i++) {
-      j = i;
-      pageLinks[i].addEventListener('click', function() {
-        // attendee list will refresh. fix the page again
-        fixPage(thisPage);
-      });
-      pageLinks[j].addEventListener('keydown', function(event) {
-        if (event.keyCode === 13 || event.keyCode == 32) { // Enter or space
-          event.preventDefault();
-          pageLinks[j].click();
-          fixPage(thisPage);
-        }
-      });
-    }
-  }
+  var searchFields;
+
   // Add an event listener to all search fields
   searchFields = document.getElementsByClassName('form-control');
   for (k=0; k < searchFields.length; k++) {
     searchFields[k].addEventListener('keydown', function() {
-      countSearchResults(thisPage);
+      a11ySearching = true;
     });
   }
 }
 
-function countSearchResults(thisPage) {
+function showSearchCount(thisPage) {
 
-  // wait briefly, for search results to refresh
-  // then count them, and display results in the alertDiv
+  // Called after the page has been updated
+  // due to the user typing a character in the search field
+  // or selecting a filter (e.g., in the Agenda)
+  // Count the relevant results, and display a message in the alertDiv
 
   // NOTE: The search feature is buggy in Whova. Example:
   // Start with 99 sessions.
@@ -667,7 +820,7 @@ function countSearchResults(thisPage) {
   var results, msg, alertDiv;
 
   alertDiv = document.getElementById('a11y-alert');
-  if (typeof alertDiv !== 'undefined') {
+  if (alertDiv) {
 
     setTimeout(function() {
       if (thisPage == 'Agenda') {

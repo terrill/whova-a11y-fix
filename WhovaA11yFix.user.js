@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name         TEST Whova Accessibility Fix
+// @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
 // @version      1.2
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
@@ -11,7 +11,7 @@
 
 // Global vars
 var a11ySearching = false; // will change to true temporarily when a user types in a search field
-var a11yDebug = true; // set to true to write messages to the console; otherwise false
+var a11yDebug = false; // set to true to write messages to the console; otherwise false
 var a11yFixingPage = false; // stop gap to prevent script from handling mutations that result from a11y fixes
 
 (function() {

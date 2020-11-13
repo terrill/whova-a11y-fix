@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.6
+// @version      1.7
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -898,7 +898,7 @@ function makeButton(el,thisPage) {
 
 function addEventListeners(thisPage) {
 
-  var searchFields;
+  var searchFields, k;
 
   // Add an event listener to all search fields
   searchFields = document.getElementsByClassName('form-control');

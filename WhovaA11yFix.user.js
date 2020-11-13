@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.5
+// @version      1.6
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -349,7 +349,8 @@ function addStyle() {
   // Make select newly designated level-2 headings more visually prominent
   styles += '.agenda-sessions [aria-level="2"],' + "\n";
   styles += '.attendees-page [aria-level="2"],' + "\n";
-  styles += '.speakers-page [aria-level="2"]' + "\n";
+  styles += '.speakers-page [aria-level="2"],' + "\n";
+  styles += '.documents-header[aria-level="2"]' + "\n";
   styles += '{ font-size:2em !important;font-weight:bold !important }' + "\n";
 
   // Stylize the new h2 at the top of the left and far right columns on some pages
@@ -787,7 +788,7 @@ function fixModalDialog(thisPage) {
 
 function fixOther(thisPage,scope) {
 
-  var i, chat;
+  var i, j, k, chat, docsLists, docsItems, docsPreviews;
 
   if (thisPage == 'Agenda') {
 
@@ -847,10 +848,27 @@ function fixOther(thisPage,scope) {
   }
   else if (thisPage == 'Documents') {
 
-    // Documents previews are presented in a <canvas> element, followed by a link
-    // TODO: Test the previews to see if they're announced at all by screen readers
-    // If needed, could add role="presentation" to an outer div
-    // Also, add role="list" and role="listitem" to outer divs
+    // Change the list of documents into an actual list
+    docsLists = document.getElementsByClassName('documents-list');
+    if (docsLists.length > 0) {
+      docsItems = document.getElementsByClassName('document-item');
+      if (docsItems.length > 0) {
+        for (i=0; i < docsLists.length; i++) {
+          docsLists[i].setAttribute('role','list');
+        }
+        for (j=0; j < docsItems.length; j++) {
+          docsItems[j].setAttribute('role','listitem');
+        }
+      }
+    }
+
+    // Hide all document previews from screen reader users
+    docsPreviews = document.getElementsByClassName('document-preview');
+    if (docsPreviews.length) {
+      for (k=0; k < docsPreviews.length; k++) {
+        docsPreviews[k].setAttribute('aria-hidden','true');
+      }
+    }
   }
 }
 

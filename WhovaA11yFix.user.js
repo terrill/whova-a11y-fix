@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.4
+// @version      1.5
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -216,9 +216,12 @@ function getPage() {
     if (pathParts[1] === 'portal' && pathParts[2] === 'webapp') {
       // this path conforms to the expected pattern
       if (pathParts[4] !== '') {
+        // standardize on upper case first letter
         if (pathParts[4] === 'exhibitors') {
-          // standardize on upper case first letter
           thisPage = 'Exhibitors';
+        }
+        else if (pathParts[4] === 'sponsors') {
+          thisPage = 'Sponsors';
         }
         else {
           thisPage = pathParts[4];
@@ -350,7 +353,7 @@ function addStyle() {
   styles += '{ font-size:2em !important;font-weight:bold !important }' + "\n";
 
   // Stylize the new h2 at the top of the left and far right columns on some pages
-  styles += '.cb-page h2, #exhibitors-layout-col-0 h2, .threadlist-root h2, .chat-header ' + "\n";
+  styles += '.cb-page h2, #exhibitors-layout-col-0 h2, #sponsors-layout-col-0 h2, .threadlist-root h2, .chat-header ' + "\n";
   styles += '{ font-size:1.5em;font-weight:normal;margin:0;padding:1em 1em 0.2em;border-bottom:1px solid #CCCCCC }' + "\n";
 
   styles += '.cb-page .add-search { margin:1em 0 }' + "\n";
@@ -562,6 +565,46 @@ function fixHeadings(thisPage,scope) {
     for (i=0; i < h3s.length; i++) {
       h3s[i].setAttribute('role','heading');
       h3s[i].setAttribute('aria-level','3');
+    }
+  }
+  else if (thisPage == 'Sponsors') {
+
+    // Add an h2 heading "List of Sponors" at the top of the left column
+    leftColumn = document.getElementById('sponsors-layout-col-0');
+    if (leftColumn) {
+      h2 = document.createElement('h2');
+      h2.textContent = 'List of Sponsors';
+      leftColumn.prepend(h2);
+    }
+
+    // Convert letters of the alphabet to h3 headings
+    h3s = document.getElementsByClassName('company-list-item-header');
+    for (i=0; i < h3s.length; i++) {
+      h3s[i].setAttribute('role','heading');
+      h3s[i].setAttribute('aria-level','3');
+    }
+
+    // Convert exhibitor names to h4 headings
+    h4s = document.getElementsByClassName('sponsor-name');
+    for (i=0; i < h4s.length; i++) {
+      h4s[i].setAttribute('role','heading');
+      h4s[i].setAttribute('aria-level','4');
+    }
+
+    // Convert main heading (exhibitor name) to h2 heading
+    // and preface it with "Selected Exhibitor: "
+    h2 = document.getElementById('sponsor-details-name');
+    if (h2) {
+      h2.textContent = 'Selected Exhibitor: ' + h2.textContent;
+      h2.setAttribute('role','heading');
+      h2.setAttribute('aria-level','2');
+    }
+
+    // Convert heading "Chat" to h2 heading
+    h2 = document.getElementsByClassName('chat-header');
+    if (h2.length > 0) {
+      h2[0].setAttribute('role','heading');
+      h2[0].setAttribute('aria-level','2');
     }
   }
   else if (thisPage == 'Exhibitors') {

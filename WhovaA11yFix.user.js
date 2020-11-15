@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.7
+// @version      1.8
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -352,6 +352,11 @@ function addStyle() {
   styles += '.speakers-page [aria-level="2"],' + "\n";
   styles += '.documents-header[aria-level="2"]' + "\n";
   styles += '{ font-size:2em !important;font-weight:bold !important }' + "\n";
+
+  // Make select newly designated level-3 headings more visually prominent
+  styles += '.exhibitor-list [aria-level="3"],' + "\n";
+  styles += '.sponsor-list [aria-level="3"]' + "\n";
+  styles += '{ font-size:1.75em;font-weight:bold;height:2em;background-color:#333 }' + "\n";
 
   // Stylize the new h2 at the top of the left and far right columns on some pages
   styles += '.cb-page h2, #exhibitors-layout-col-0 h2, #sponsors-layout-col-0 h2, .threadlist-root h2, .chat-header ' + "\n";

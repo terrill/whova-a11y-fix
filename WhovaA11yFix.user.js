@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.8
+// @version      1.9
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -43,7 +43,7 @@ function init() {
   //   1. Check the URL (a change in URL = a new page)
   //   2. Check for specific mutations using nodeName and classList
 
-  var i, thisPage, prevPage, searching, mutationObserver, observerOptions;
+  var i, thisPage, prevPage, searching, mutationObserver, observerOptions, companyName;
 
   // Fix the current page
   thisPage = getPage();
@@ -120,17 +120,21 @@ function init() {
           }
         }
         else if (thisPage === 'Sponsors') {
-          if (mutations[i].target.classList.contains('sponsor-details')) {
-            // this mutation occurs both when the page first loads
-            // and when the user clicks on a sponsor
+          // sponsor-details-header is used interchangeably as a class and id. Frustrating!
+          if (mutations[i].target.classList.contains('sponsor-details-header') || mutations[i].target.id == 'sponsor-details-header') {
+            // the user has clicked a sponsor
+            companyName = document.getElementById('sponsor-details-name').textContent;
             fixPage(thisPage,'main');
+            announceViewChange(thisPage,companyName);
           }
         }
         else if (thisPage === 'Exhibitors') {
-          if (mutations[i].target.classList.contains('exhibitor-details')) {
-            // this mutation occurs both when the page first loads
-            // and when the user clicks on an exhibitor
+          // exhibitor-details-header is used interchangeably as a class and id. Frustrating!
+          if (mutations[i].target.classList.contains('exhibitor-details-header') || mutations[i].target.id == 'exhibitor-details-header') {
+            // the user has clicked an exhibitor
+            companyName = document.getElementById('exhibitor-details-name').textContent;
             fixPage(thisPage,'main');
+            announceViewChange(thisPage,companyName);
           }
         }
         else if (thisPage === 'Messages') {
@@ -550,11 +554,14 @@ function fixHeadings(thisPage,scope) {
   else if (thisPage == 'CommunityBoard') {
 
     // Add an h2 heading "List of Topics" at the top of the left column
+    // if it doesn't already exist
     leftColumn = document.getElementsByClassName('left-container');
     if (leftColumn.length > 0) {
-      h2 = document.createElement('h2');
-      h2.textContent = 'List of Topics';
-      leftColumn[0].prepend(h2);
+      if (!(leftColumn[0].querySelectorAll('h2').length)) {
+        h2 = document.createElement('h2');
+        h2.textContent = 'List of Topics';
+        leftColumn[0].prepend(h2);
+      }
     }
 
     // Make the existing big bold text at the top of the right column an h2
@@ -576,11 +583,14 @@ function fixHeadings(thisPage,scope) {
   else if (thisPage == 'Sponsors') {
 
     // Add an h2 heading "List of Sponors" at the top of the left column
+    // if it doesn't already exist
     leftColumn = document.getElementById('sponsors-layout-col-0');
     if (leftColumn) {
-      h2 = document.createElement('h2');
-      h2.textContent = 'List of Sponsors';
-      leftColumn.prepend(h2);
+      if (!(leftColumn.querySelectorAll('h2').length)) {
+        h2 = document.createElement('h2');
+        h2.textContent = 'List of Sponsors';
+        leftColumn.prepend(h2);
+      }
     }
 
     // Convert letters of the alphabet to h3 headings
@@ -598,10 +608,10 @@ function fixHeadings(thisPage,scope) {
     }
 
     // Convert main heading (exhibitor name) to h2 heading
-    // and preface it with "Selected Exhibitor: "
+    // and preface it with "Selected Sponsor: "
     h2 = document.getElementById('sponsor-details-name');
     if (h2) {
-      h2.textContent = 'Selected Exhibitor: ' + h2.textContent;
+      h2.textContent = 'Selected Sponsor: ' + h2.textContent;
       h2.setAttribute('role','heading');
       h2.setAttribute('aria-level','2');
     }
@@ -616,11 +626,14 @@ function fixHeadings(thisPage,scope) {
   else if (thisPage == 'Exhibitors') {
 
     // Add an h2 heading "List of Exhibitors" at the top of the left column
+    // if it doesn't already exist
     leftColumn = document.getElementById('exhibitors-layout-col-0');
     if (leftColumn) {
-      h2 = document.createElement('h2');
-      h2.textContent = 'List of Exhibitors';
-      leftColumn.prepend(h2);
+      if (!(leftColumn.querySelectorAll('h2').length)) {
+        h2 = document.createElement('h2');
+        h2.textContent = 'List of Exhibitors';
+        leftColumn.prepend(h2);
+      }
     }
 
     // Convert letters of the alphabet to h3 headings
@@ -656,11 +669,14 @@ function fixHeadings(thisPage,scope) {
   else if (thisPage == 'Messages') {
 
     // Add an h2 heading "List of Messages" at the top of the left column
+    // if it doesn't already exist
     leftColumn = document.getElementsByClassName('threadlist-root');
     if (leftColumn.length > 0) {
-      h2 = document.createElement('h2');
-      h2.textContent = 'List of Messages';
-      leftColumn[0].prepend(h2);
+      if (!(leftColumn[0].querySelectorAll('h2').length)) {
+        h2 = document.createElement('h2');
+        h2.textContent = 'List of Messages';
+        leftColumn[0].prepend(h2);
+      }
     }
 
     // Convert sender names to h3 headings
@@ -977,6 +993,33 @@ function showSearchCount(thisPage) {
       alertDiv.textContent = msg;
       alertDiv.style.display = 'block';
     },1000);
+  }
+}
+
+function announceViewChange(thisPage,label) {
+
+  // called when select mutations are observed,
+  // indicating that user has clicked on an item that initiates a page view
+  // populates live region with a message so user receives feedback about their action
+  // label is a name/label that identifies the new content that has loaded
+  var msg, alertDiv;
+
+  alertDiv = document.getElementById('a11y-alert');
+  if (alertDiv) {
+
+    if (thisPage == 'Sponsors' || thisPage == 'Exhibitors') {
+      if (typeof label !== 'undefined') {
+        if (label.substr(0,8) === 'Selected') {
+          // A preface has already been added to the label
+          // Remove that from the message
+          label.slice(label.lastIndexOf(':') + 2);
+        }
+        msg = 'Now showing ' + label + '. ';
+        msg += 'The new content is marked with a level 2 heading.';
+        alertDiv.textContent = msg;
+        alertDiv.style.display = 'block';
+      }
+    }
   }
 }
 

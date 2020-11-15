@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Whova Accessibility Fix
 // @namespace    https://github.com/terrill/whova-a11y-fix
-// @version      1.9
+// @version      1.10
 // @updateURL    https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @downloadURL  https://raw.githubusercontent.com/terrill/whova-a11y-fix/main/user.js
 // @description  Fixes accessibility issues in Whova's web app
@@ -43,7 +43,7 @@ function init() {
   //   1. Check the URL (a change in URL = a new page)
   //   2. Check for specific mutations using nodeName and classList
 
-  var i, thisPage, prevPage, searching, mutationObserver, observerOptions, companyName;
+  var i, thisPage, prevPage, searching, mutationObserver, observerOptions, changeLabel;
 
   // Fix the current page
   thisPage = getPage();
@@ -107,6 +107,10 @@ function init() {
         else if (thisPage === 'CommunityBoard') {
           if (mutations[i].target.classList.contains('simplebar-content')) {
             // the list of topics has changed
+            // NOTE: The above mutation is not reliable.
+            // When a user clicks on a topic, the only reliable mutation is a div with no class or name.
+            // TODO: Figure out a way to check for Community Board changes.
+            // Alternative may be to add an event listener for clicks on each topic
             fixPage(thisPage,'main');
             if (a11ySearching) {
               showSearchCount(thisPage);
@@ -123,25 +127,27 @@ function init() {
           // sponsor-details-header is used interchangeably as a class and id. Frustrating!
           if (mutations[i].target.classList.contains('sponsor-details-header') || mutations[i].target.id == 'sponsor-details-header') {
             // the user has clicked a sponsor
-            companyName = document.getElementById('sponsor-details-name').textContent;
+            changeLabel = document.getElementById('sponsor-details-name').textContent;
             fixPage(thisPage,'main');
-            announceViewChange(thisPage,companyName);
+            announceViewChange(thisPage,changeLabel);
           }
         }
         else if (thisPage === 'Exhibitors') {
           // exhibitor-details-header is used interchangeably as a class and id. Frustrating!
           if (mutations[i].target.classList.contains('exhibitor-details-header') || mutations[i].target.id == 'exhibitor-details-header') {
             // the user has clicked an exhibitor
-            companyName = document.getElementById('exhibitor-details-name').textContent;
+            changeLabel = document.getElementById('exhibitor-details-name').textContent;
             fixPage(thisPage,'main');
-            announceViewChange(thisPage,companyName);
+            announceViewChange(thisPage,changeLabel);
           }
         }
         else if (thisPage === 'Messages') {
-          if (mutations[i].target.classList.contains('thread-messages')) {
+          if (mutations[i].target.classList.contains('thread-messages') || mutations[i].target.classList.contains('session-comments')) {
             // this mutation occurs both when the page first loads
             // and when the user clicks on a message
+            changeLabel = document.getElementsByClassName('thread-recv-name')[0].textContent;
             fixPage(thisPage,'main');
+            announceViewChange(thisPage,changeLabel);
           }
         }
         else if (thisPage === 'SessionQA') {
@@ -385,6 +391,19 @@ function addStyle() {
   // The above focus indicator causes problems within the nav menu
   // Override with this alternative
   styles += 'div.sidenav .side-link-main:hover, div.sidenav a.a11y-nav-link:focus li {' + "\n";
+  styles += '  border: none !important;' + "\n";
+  styles += '  box-shadow: none !important;' + "\n";
+  styles += '  background-color: black !important;' + "\n";
+  styles += '  color: white !important;' + "\n";
+  styles += '} ' + "\n";
+
+  // The above focus indicator also causes problems within left column nav on select pages
+  // Override with this alternative
+  styles += 'div.simplebar-content a:hover, div.simplebar-content a:focus, ' + "\n";
+  styles += 'div.simplebar-content a:hover div.single-topic, div.simplebar-content a:focus div.single-topic, ' + "\n";
+  styles += 'div.simplebar-content a:hover div.title, div.simplebar-content a:focus div.title, ' + "\n";
+  styles += 'div.simplebar-content a:hover div.threadlist-container, div.simplebar-content a:focus div.threadlist-container, ' + "\n";
+  styles += 'div.simplebar-content a:hover div.threadlist-name, div.simplebar-content a:focus div.threadlist-name {' + "\n";
   styles += '  border: none !important;' + "\n";
   styles += '  box-shadow: none !important;' + "\n";
   styles += '  background-color: black !important;' + "\n";
@@ -1006,19 +1025,21 @@ function announceViewChange(thisPage,label) {
 
   alertDiv = document.getElementById('a11y-alert');
   if (alertDiv) {
-
-    if (thisPage == 'Sponsors' || thisPage == 'Exhibitors') {
-      if (typeof label !== 'undefined') {
-        if (label.substr(0,8) === 'Selected') {
-          // A preface has already been added to the label
-          // Remove that from the message
-          label.slice(label.lastIndexOf(':') + 2);
-        }
-        msg = 'Now showing ' + label + '. ';
-        msg += 'The new content is marked with a level 2 heading.';
-        alertDiv.textContent = msg;
-        alertDiv.style.display = 'block';
+    if (typeof label !== 'undefined') {
+      if (label.substr(0,8) === 'Selected') {
+        // A preface has already been added to the label
+        // Remove that from the message
+        label.slice(label.lastIndexOf(':') + 2);
       }
+      if (thisPage == 'Sponsors' || thisPage == 'Exhibitors') {
+        msg = 'Now showing ' + label + '. ';
+      }
+      else if (thisPage == 'Messages') {
+        msg = 'Now showing message thread with ' + label + '. ';
+      }
+      msg += 'The new content is marked with a level 2 heading.';
+      alertDiv.textContent = msg;
+      alertDiv.style.display = 'block';
     }
   }
 }
